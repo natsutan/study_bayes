@@ -6,11 +6,12 @@ N_MAX = 10
 TRUE_MU = 0.25
 
 def a_hat(xs, a):
-    return 0
+    return np.sum(xs) + a
 
 
 def b_hat(xs, b):
-    return 0
+    N = len(xs)
+    return N - np.sum(xs) + b
 
 
 def coin_toss():
@@ -27,12 +28,20 @@ def bernoulli(x, mu):
     return np.power(mu, x) * np.power((1-mu), (1-x))
 
 
-def plot_bernoulli(mu):
-    x = np.arange(0.0, 1.0, 0.01)
-    y = bernoulli(x, mu)
+
+
+def beta(x, a, b):
+    c_b_inv = (math.gamma(a) * math.gamma(b)) / math.gamma(a + b)
+
+    t1 = np.power(x, a-1)
+    t2 = np.power(1-x, b-1)
+
+    return (t1 * t2) / c_b_inv
+
+def plot_beta_distribution(a, b):
+    x = np.arange(0.01, 1.0, 0.01)
+    y = beta(x, a, b)
     print(y)
-
-
 
 
 def main():
@@ -41,7 +50,7 @@ def main():
         coin = coin_toss()
         ns.append(coin)
 
-    plot_bernoulli(0.5)
+    plot_beta_distribution(0.5, 0.5)
 
 
 
