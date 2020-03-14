@@ -1,9 +1,11 @@
 import random
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
-N_MAX = 10
-TRUE_MU = 0.25
+N_MAX = 100
+TRUE_MU = 0.3
+
 
 def a_hat(xs, a):
     return np.sum(xs) + a
@@ -15,7 +17,7 @@ def b_hat(xs, b):
 
 
 def coin_toss():
-    if random.random() < TRUE_MU:
+    if random.random() > TRUE_MU:
         return 0
     else:
         return 1
@@ -28,8 +30,6 @@ def bernoulli(x, mu):
     return np.power(mu, x) * np.power((1-mu), (1-x))
 
 
-
-
 def beta(x, a, b):
     c_b_inv = (math.gamma(a) * math.gamma(b)) / math.gamma(a + b)
 
@@ -38,21 +38,37 @@ def beta(x, a, b):
 
     return (t1 * t2) / c_b_inv
 
-def plot_beta_distribution(a, b):
+def calc_beta_distribution(a, b):
     x = np.arange(0.01, 1.0, 0.01)
     y = beta(x, a, b)
-    print(y)
+    return x, y
 
 
 def main():
     ns = []
+    a = 0.5
+    b = 0.5
+    x, y = calc_beta_distribution(a, b)
+    plt.plot(x, y)
+    plt.savefig('img/fig%03d.png' % 0)
+    plt.clf()
+
     for i in range(N_MAX):
         coin = coin_toss()
         ns.append(coin)
 
-    plot_beta_distribution(0.5, 0.5)
+        a_ = a_hat(ns, a)
+        b_ = b_hat(ns, b)
 
+        if (i % 10) == 0:
+            x, y = calc_beta_distribution(a_, b_)
+            plt.plot(x,y)
+            plt.savefig('img/fig%03d.png' % i)
+            plt.clf()
 
+    print(a_, b_)
+
+    plt.show()
 
     print(ns)
 
