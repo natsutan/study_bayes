@@ -3,7 +3,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-DIMMENSION = 3
+DIMMENSION = 1
 Y_MAX = 1.1
 
 
@@ -52,11 +52,13 @@ def plot_model(data, r_hat, m_hat):
 
     plt.show()
 
+
 def calc_r_hat(data, lambda_s, Rambda):
     x = data[:,0]
     r_hat = lambda_s * np.sum(np.dot(x, np.transpose(x))) + Rambda
 
     return r_hat
+
 
 def calc_m_hat(data, r_hat, lambda_s, Rambda, m):
     x = data[:,0]
