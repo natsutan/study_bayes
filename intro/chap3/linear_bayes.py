@@ -3,40 +3,91 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-DIMMENSION = 1
-Y_MAX = 1.2
-
+DIMMENSION = 5
+Y_MAX = 3.0
+DATA_N = 20
 
 class LinerModel():
     def __init__(self, dim, λ, Λ, m):
         self.dim = dim
         self.λ = λ
         self.Λ = Λ
-        self.m = m
+        self.m = m.reshape(self.dim, 1)
 
-        self.Λ_hat = self.Λ
-        self.m_hat = m
+        self.Λ_hat = np.copy(self.Λ)
+        self.m_hat = np.copy(self.m)
 
     def fit(self, xs, ys):
-        x = np.ones(xs.shape[0])
-        self.Λ_hat = self.λ * np.sum(np.dot(x, np.transpose(x))) + self.Λ
-        y = ys
+        num = len(ys)
 
-        tmp = np.sum(x * y)
-        r_hat_inv = np.linalg.inv(self.Λ_hat)
+        if len(xs) == 0:
+            return
 
-        self.m_hat = r_hat_inv * (self.λ * tmp + np.dot(self.Λ, self.m))
+        if self.dim == 1:
+            x = np.ones(xs.shape[0])
+            self.Λ_hat = self.λ * np.sum(np.dot(x, np.transpose(x))) + self.Λ
 
+            tmp = np.sum(x * ys)
+            r_hat_inv = np.linalg.inv(self.Λ_hat)
+
+            self.m_hat = r_hat_inv * (self.λ * tmp + np.dot(self.Λ, self.m))
+        else:
+            x_e = []
+            for i in range(num):
+                x_e.append(expand(xs[i], self.dim))
+            x_e = np.array(x_e)
+
+            sum_ = np.zeros((self.dim, self.dim))
+            for i in range(x_e.shape[0]):
+                sum_ += np.dot(x_e[i], x_e[i].T)
+
+            self.Λ_hat = self.λ * sum_ + self.Λ
+
+            Λ_hat_inv = np.linalg.inv(self.Λ_hat)
+
+            sum_ = np.zeros((self.dim, 1))
+            for i in range(num):
+                sum_ += ys[i] * x_e[i]
+
+            tmp = self.λ * sum_ + np.dot(self.Λ, self.m)
+            self.m_hat = np.dot(Λ_hat_inv, tmp)
 
     def predict(self, x):
-        None
+        if self.dim == 1:
+            dev = math.sqrt(1/self.Λ_hat)
+            return self.m_hat[0], dev
+        else:
+            x_e = expand(x, self.dim)
+            mu = np.dot(self.m_hat.T, x_e)[0][0]
+
+            Λ_hat_inv = np.linalg.inv(self.Λ_hat)
+            tmp = np.dot(x_e.T, Λ_hat_inv)
+            tmp2 = np.dot(tmp, x_e)
+
+            lambda_star = (1 / self.λ) + tmp2
+            dev = math.sqrt(lambda_star[0][0])
+            return mu, dev
+
+
+
+
+def expand(x, dim):
+    val = []
+    for d in range(dim):
+        r = x ** d
+        val.append(r)
+
+    val_t = np.array(val).reshape((dim, 1))
+    return val_t
+
+
 
 
 def make_data(n=10):
     data = []
     for i in range(n):
         x = random.random() * 2 * math.pi
-        y = math.sin(x) + 0.1
+        y = math.sin(x) + 0.15
         data.append((x, y))
 
     return np.array(data)
@@ -60,7 +111,7 @@ def predict(x, m_ast, lambda_s, RAMBDA):
     return u_ast, lamda_ast_inv
 
 
-def plot_model(data, r_hat, m_hat):
+def plot_prediction(data, model, fname=None):
     # データのプロット
     xs = []
     ys = []
@@ -73,18 +124,29 @@ def plot_model(data, r_hat, m_hat):
     xs = []
     ys = []
     yuppers = []
+    ylowers = []
+
 
     # 確率分布のプロット
     for x in np.arange(0, 2 * math.pi, 0.1):
-        y = m_hat[0]
+        y, dev = model.predict(x)
 
         xs.append(x)
         ys.append(y)
+        # dev = math.sqrt(1/model.Λ_hat)
+        yuppers.append(y+dev)
+        ylowers.append(y-dev)
 
     plt.plot(xs, ys)
+    plt.plot(xs, yuppers, linestyle='dashed', color='blue')
+    plt.plot(xs, ylowers, linestyle='dashed', color='blue')
+
     plt.ylim(-Y_MAX, Y_MAX)
 
+    if fname is not None:
+        plt.savefig(fname)
     plt.show()
+
 
 
 def calc_r_hat(data, lambda_s, Rambda):
@@ -111,25 +173,27 @@ def calc_m_hat(data, r_hat, lambda_s, Rambda, m):
 
 def main():
     random.seed(0)
-    data = make_data(10)
+    data = make_data(DATA_N)
     #plot_data(data)
 
     Λ = np.identity(DIMMENSION)
     m = np.zeros(DIMMENSION)
     λ = 1.0
-    N =7
 
-    λ_hat = calc_r_hat(data[:N], λ, Λ)
-    m_hat = calc_m_hat(data[:N], λ_hat, λ, Λ, m)
+#    data = np.array([[2, 3], [0, 1]])
+#    model = LinerModel(DIMMENSION, λ, Λ, m)
+#    model.fit(data[:, 0], data[:, 1])
+#    fname = "img/2dfit.png"
+#   plot_prediction(data, model, fname)
 
-    plot_model(data[:N], λ_hat, m_hat)
 
-    print(λ_hat, m_hat)
+    for N in range(DATA_N):
+        model = LinerModel(DIMMENSION, λ, Λ, m)
+        model.fit(data[:N, 0], data[:N, 1])
 
-    model = LinerModel(1, λ, Λ, m)
-    model.fit(data[:N, 0], data[:N, 1])
-
-    print(λ_hat, m_hat)
+        print(model.Λ_hat, model.m_hat)
+        fname = "img/output%02d.png" % N
+        plot_prediction(data[:N], model, fname)
 
 
 if __name__ == '__main__':
